@@ -473,11 +473,18 @@ func (r *ReconcilePerconaServerMongoDB) reconcileStatefulSet(arbiter bool, cr *a
 	}
 
 	switch cr.Spec.UpdateStrategy {
-	case "OnDelete":
-		sfsSpec.UpdateStrategy = appsv1.StatefulSetUpdateStrategy{}
-		sfsSpec.UpdateStrategy.Type = cr.Spec.UpdateStrategy
+	case appsv1.OnDeleteStatefulSetStrategyType:
+		sfsSpec.UpdateStrategy = appsv1.StatefulSetUpdateStrategy{Type: appsv1.OnDeleteStatefulSetStrategyType}
+	case api.SmartUpdateStatefulSetStrategyType:
+		sfsSpec.UpdateStrategy = appsv1.StatefulSetUpdateStrategy{Type: appsv1.OnDeleteStatefulSetStrategyType}
 	default:
-		sfsSpec.UpdateStrategy.Type = cr.Spec.UpdateStrategy
+		var zero int32 = 0
+		sfsSpec.UpdateStrategy = appsv1.StatefulSetUpdateStrategy{
+			Type: appsv1.RollingUpdateStatefulSetStrategyType,
+			RollingUpdate: &appsv1.RollingUpdateStatefulSetStrategy{
+				Partition: &zero,
+			},
+		}
 	}
 
 	sslHash, err := r.getTLSHash(cr, cr.Spec.Secrets.SSL)
@@ -521,7 +528,31 @@ func (r *ReconcilePerconaServerMongoDB) reconcileStatefulSet(arbiter bool, cr *a
 		}
 	}
 
+	if err := r.smartUpdate(cr, sfs); err != nil {
+		return nil, fmt.Errorf("failed to run smartUpdate %v", err)
+	}
+
 	return sfs, nil
+}
+
+func (r *ReconcilePerconaServerMongoDB) smartUpdate(cr *api.PerconaServerMongoDB, sfs *appsv1.StatefulSet) error {
+	if cr.Spec.UpdateStrategy != api.SmartUpdateStatefulSetStrategyType {
+		return nil
+	}
+
+	if sfs.Status.UpdatedReplicas >= sfs.Status.Replicas {
+		return nil
+	}
+
+	log.Info("statefullSet was changed, run smart update")
+
+	// TODO: check backup running
+
+	if sfs.Status.ReadyReplicas < sfs.Status.Replicas {
+		return fmt.Errorf("can't start/continue 'SmartUpdate': waiting for all replicas are ready")
+	}
+
+	return nil
 }
 
 func (r *ReconcilePerconaServerMongoDB) operatorPod() (corev1.Pod, error) {
