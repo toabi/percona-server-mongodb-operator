@@ -223,14 +223,14 @@ func (r *ReconcilePerconaServerMongoDB) Reconcile(request reconcile.Request) (re
 			return reconcile.Result{}, err
 		}
 
-		_, err = r.reconcileStatefulSet(false, cr, replset, matchLabels, internalKey)
+		_, err = r.reconcileStatefulSet(false, cr, replset, matchLabels, internalKey, secrets)
 		if err != nil {
 			err = errors.Errorf("reconcile StatefulSet for %s: %v", replset.Name, err)
 			return reconcile.Result{}, err
 		}
 
 		if replset.Arbiter.Enabled {
-			_, err := r.reconcileStatefulSet(true, cr, replset, matchLabels, internalKey)
+			_, err := r.reconcileStatefulSet(true, cr, replset, matchLabels, internalKey, secrets)
 			if err != nil {
 				err = errors.Errorf("reconcile Arbiter StatefulSet for %s: %v", replset.Name, err)
 				return reconcile.Result{}, err
@@ -343,7 +343,7 @@ func (r *ReconcilePerconaServerMongoDB) ensureSecurityKey(cr *api.PerconaServerM
 }
 
 // TODO: reduce cyclomatic complexity
-func (r *ReconcilePerconaServerMongoDB) reconcileStatefulSet(arbiter bool, cr *api.PerconaServerMongoDB, replset *api.ReplsetSpec, matchLabels map[string]string, internalKeyName string) (*appsv1.StatefulSet, error) {
+func (r *ReconcilePerconaServerMongoDB) reconcileStatefulSet(arbiter bool, cr *api.PerconaServerMongoDB, replset *api.ReplsetSpec, matchLabels map[string]string, internalKeyName string, secret *corev1.Secret) (*appsv1.StatefulSet, error) {
 	sfsName := cr.Name + "-" + replset.Name
 	size := replset.Size
 	containerName := "mongod"
@@ -376,7 +376,7 @@ func (r *ReconcilePerconaServerMongoDB) reconcileStatefulSet(arbiter bool, cr *a
 		if err != nil {
 			return nil, fmt.Errorf("failed to get operator pod: %v", err)
 		}
-		inits = append(inits, psmdb.EntrypointInitContainer(operatorPod.Spec.Containers[0].Image))
+		_ = append(inits, psmdb.EntrypointInitContainer(operatorPod.Spec.Containers[0].Image))
 	}
 
 	sfsSpec, err := psmdb.StatefulSpec(cr, replset, containerName, matchLabels, multiAZ, size, internalKeyName, inits)
@@ -528,31 +528,11 @@ func (r *ReconcilePerconaServerMongoDB) reconcileStatefulSet(arbiter bool, cr *a
 		}
 	}
 
-	if err := r.smartUpdate(cr, sfs); err != nil {
+	if err := r.smartUpdate(cr, sfs, replset, secret); err != nil {
 		return nil, fmt.Errorf("failed to run smartUpdate %v", err)
 	}
 
 	return sfs, nil
-}
-
-func (r *ReconcilePerconaServerMongoDB) smartUpdate(cr *api.PerconaServerMongoDB, sfs *appsv1.StatefulSet) error {
-	if cr.Spec.UpdateStrategy != api.SmartUpdateStatefulSetStrategyType {
-		return nil
-	}
-
-	if sfs.Status.UpdatedReplicas >= sfs.Status.Replicas {
-		return nil
-	}
-
-	log.Info("statefullSet was changed, run smart update")
-
-	// TODO: check backup running
-
-	if sfs.Status.ReadyReplicas < sfs.Status.Replicas {
-		return fmt.Errorf("can't start/continue 'SmartUpdate': waiting for all replicas are ready")
-	}
-
-	return nil
 }
 
 func (r *ReconcilePerconaServerMongoDB) operatorPod() (corev1.Pod, error) {

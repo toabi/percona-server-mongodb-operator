@@ -100,7 +100,7 @@ func container(m *api.PerconaServerMongoDB, replset *api.ReplsetSpec, name strin
 
 	if gte {
 		// container.Args = []string{"mongod"}
-		container.Command = []string{"/data/db/ps-entry.sh"}
+		//container.Command = []string{"/data/db/ps-entry.sh"}
 	}
 
 	return container, nil
