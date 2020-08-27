@@ -16,6 +16,8 @@ import (
 // DefaultDNSSuffix is a default dns suffix for the cluster service
 const DefaultDNSSuffix = "svc.cluster.local"
 
+const WorkloadSA = "default"
+
 var (
 	defaultRunUID                   int64 = 1001
 	defaultUsersSecretName                = "percona-server-mongodb-users"
@@ -197,6 +199,10 @@ func (cr *PerconaServerMongoDB) CheckNSetDefaults(platform version.Platform, log
 		}
 		if replset.ReadinessProbe.FailureThreshold == 0 {
 			replset.ReadinessProbe.FailureThreshold = int32(8)
+		}
+
+		if len(replset.ServiceAccountName) == 0 {
+			replset.ServiceAccountName = WorkloadSA
 		}
 
 		if cr.Spec.Pause {
