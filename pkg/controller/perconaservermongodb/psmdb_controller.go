@@ -466,7 +466,11 @@ func (r *ReconcilePerconaServerMongoDB) reconcileStatefulSet(arbiter bool, cr *a
 	if sfsSpec.Template.Annotations == nil {
 		sfsSpec.Template.Annotations = make(map[string]string)
 	}
-	sfs.Annotations = make(map[string]string)
+
+	if sfs.Annotations == nil {
+		sfs.Annotations = make(map[string]string)
+	}
+
 	for k, v := range sfs.Spec.Template.Annotations {
 		sfsSpec.Template.Annotations[k] = v
 		if !strings.HasPrefix(k, "percona.com") {

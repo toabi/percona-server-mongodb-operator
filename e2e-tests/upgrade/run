@@ -81,7 +81,7 @@ main() {
         echo 'Operator image has not been updated'
         exit 1
     fi
-    
+
     compare_generation 1 statefulset "${CLUSTER}-rs0"
 
     sleep 10
@@ -95,7 +95,7 @@ main() {
             "backup": { "image": "'"$IMAGE_BACKUP_TO_UPDATE"'" }
         }}'
 
-    sleep 10
+    wait_cluster_consistency "${CLUSTER}" "${CLUSTER_SIZE}"
     compare_generation 2 statefulset "${CLUSTER}-rs0"
     compare_generation 2 psmdb "${CLUSTER}"
 
@@ -106,13 +106,13 @@ main() {
         echo 'MongoDB image has not been updated'
         exit 1
     fi
-    
+
     sleep 10
 
     wait_cluster_consistency "${CLUSTER}" "${CLUSTER_SIZE}"
     sleep 10
     wait_cluster_consistency "${CLUSTER}" "${CLUSTER_SIZE}"
-    sleep 10 
+    sleep 10
     wait_cluster_consistency "${CLUSTER}" "${CLUSTER_SIZE}"
 
     wait_for_running "${CLUSTER}-rs0" "${CLUSTER_SIZE}"
