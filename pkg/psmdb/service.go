@@ -65,7 +65,14 @@ func ExternalService(m *api.PerconaServerMongoDB, replset *api.ReplsetSpec, podN
 			Namespace: m.Namespace,
 		},
 	}
+	var annotations = make(map[string]string)
+	for index := range replset.Connectivity.Mapping {
+		if replset.Connectivity.Mapping[index].Internal == podName {
+			annotations[externalHostAnnotation]=replset.Connectivity.Mapping[index].External
+		}
+	}
 
+	svc.Annotations = annotations
 	svc.Labels = map[string]string{
 		"app.kubernetes.io/name":       "percona-server-mongodb",
 		"app.kubernetes.io/instance":   m.Name,
@@ -143,6 +150,9 @@ func GetServiceAddr(svc corev1.Service, pod corev1.Pod, cl client.Client) (*Serv
 			}
 			addr.Port = int(p.NodePort)
 		}
+	}
+	if externalHost,ok := svc.Annotations[externalHostAnnotation]; ok {
+		addr.Host = externalHost
 	}
 	return addr, nil
 }

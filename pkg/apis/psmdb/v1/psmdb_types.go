@@ -146,6 +146,15 @@ const (
 	ClusterError                        = "Error"
 )
 
+type Mapping struct {
+	External string `json:"external"`
+	Internal string `json:"internal"`
+}
+
+type Connectivity struct {
+	Mapping []Mapping `json:"mapping"`
+}
+
 type ClusterCondition struct {
 	Status             ConditionStatus      `json:"status"`
 	Type               ClusterConditionType `json:"type"`
@@ -193,6 +202,7 @@ type ReplsetSpec struct {
 	LivenessProbe            *LivenessProbeExtended     `json:"livenessProbe,omitempty"`
 	PodSecurityContext       *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
 	ContainerSecurityContext *corev1.SecurityContext    `json:"containerSecurityContext,omitempty"`
+	Connectivity        	 Connectivity           	`json:"connectivity"`
 	MultiAZ
 }
 
@@ -507,3 +517,4 @@ func (cr *PerconaServerMongoDB) CompareVersion(version string) int {
 	//using Must because "version" must be right format
 	return cr.version.Compare(v.Must(v.NewVersion(version)))
 }
+
