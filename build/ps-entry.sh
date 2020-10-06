@@ -265,6 +265,8 @@ if [ "$originalArgOne" = 'mongod' ]; then
 
 	if [ -n "$shouldPerformInitdb" ]; then
 		echo "Running init db"
+		echo "ls:"
+		ls $MONGO_SSL_DIR
 		mongodHackedArgs=( "$@" )
 		if _parse_config "$@"; then
 			_mongod_hack_ensure_arg_val --config "$tempConfigFile" "${mongodHackedArgs[@]}"
@@ -309,8 +311,9 @@ if [ "$originalArgOne" = 'mongod' ]; then
 		rm -f "$pidfile"
 		_mongod_hack_ensure_arg_val --pidfilepath "$pidfile" "${mongodHackedArgs[@]}"
 
+		echo "Forking mongodb: ${mongodHackedArgs[@]}"
 		"${mongodHackedArgs[@]}" --fork
-
+		echo "Done forking. Trying to connect to it."
 		mongo=( mongo --host 127.0.0.1 --port 27017 --quiet )
 
 		# check to see that our "mongod" actually did start up (catches "--help", "--version", MongoDB 3.2 being silly, slow prealloc, etc)
