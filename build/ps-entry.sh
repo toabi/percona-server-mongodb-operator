@@ -6,6 +6,7 @@ if [ "${1:0:1}" = '-' ]; then
 fi
 
 originalArgOne="$1"
+echo "Running ps-entry.sh"
 
 # allow the container to be started with `--user`
 # all mongo* commands should be dropped to the correct user
@@ -263,6 +264,7 @@ if [ "$originalArgOne" = 'mongod' ]; then
 	fi
 
 	if [ -n "$shouldPerformInitdb" ]; then
+		echo "Running init db"
 		mongodHackedArgs=( "$@" )
 		if _parse_config "$@"; then
 			_mongod_hack_ensure_arg_val --config "$tempConfigFile" "${mongodHackedArgs[@]}"
