@@ -215,6 +215,8 @@ _dbPath() {
 	echo "$dbPath"
 }
 
+echo "ArgOne = $originalArgOne";
+
 if [ "$originalArgOne" = 'mongod' ]; then
 	file_env 'MONGO_INITDB_ROOT_USERNAME'
 	file_env 'MONGO_INITDB_ROOT_PASSWORD'
