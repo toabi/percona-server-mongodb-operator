@@ -252,7 +252,7 @@ func (r *ReconcilePerconaServerMongoDB) handleReplsetInit(m *api.PerconaServerMo
 
 		var tlsConnectionParameter = ""
 		if replset.Connectivity != nil {
-			tlsConnectionParameter = "&tls=true&tlsAllowInvalidCertificates=true&tlsCertificateKeyFile=/tmp/tls.pem"
+			tlsConnectionParameter = "&tls=true&tlsAllowInvalidCertificates=true&tlsCertificateKeyFile=/tmp/tls.pem&tlsCAFile=/etc/mongodb-ssl/ca.crt"
 		}
 
 		cmd[2] = fmt.Sprintf(
