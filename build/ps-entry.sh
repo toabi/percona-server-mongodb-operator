@@ -272,7 +272,6 @@ if [ "$originalArgOne" = 'mongod' ]; then
 	if [ -n "$shouldPerformInitdb" ]; then
 		echo "I should perform init db and will do it now..."
 		echo "ls:"
-		ls $MONGO_SSL_DIR
 		mongodHackedArgs=( "$@" )
 		if _parse_config "$@"; then
 			_mongod_hack_ensure_arg_val --config "$tempConfigFile" "${mongodHackedArgs[@]}"
@@ -291,8 +290,10 @@ if [ "$originalArgOne" = 'mongod' ]; then
 		# "BadValue: need sslPEMKeyFile when SSL is enabled" vs "BadValue: need to enable SSL via the sslMode flag when using SSL configuration parameters"
 		tlsMode='disabled'
 		if _mongod_hack_have_arg '--tlsCertificateKeyFile' "${mongodHackedArgs[@]}"; then
+			echo "Setting tlsMode preferTLS"
 			tlsMode='preferTLS'
 		elif _mongod_hack_have_arg '--sslPEMKeyFile' "${mongodHackedArgs[@]}"; then
+			echo "Setting tlsMode preferSSL"
 			tlsMode='preferSSL'
 		fi
 		# 4.2 switched all configuration/flag names from "SSL" to "TLS"
@@ -381,6 +382,10 @@ if [ "$originalArgOne" = 'mongod' ]; then
 
 	mongodHackedArgs=("$@")
 	MONGO_SSL_DIR=${MONGO_SSL_DIR:-/etc/mongodb-ssl}
+
+	echo "Contents of our MONGO_SSL_DIR"
+	ls $MONGO_SSL_DIR
+
 	CA=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 	if [ -f /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt ]; then
 		CA=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
