@@ -257,7 +257,7 @@ func (r *ReconcilePerconaServerMongoDB) handleReplsetInit(m *api.PerconaServerMo
 
 		cmd[2] = fmt.Sprintf(
 			`
-			cat <<-EOF | mongo -u ${MONGODB_USER_ADMIN_USER} -p ${MONGODB_USER_ADMIN_PASSWORD} --host %s %s"
+			cat <<-EOF | mongo -u ${MONGODB_USER_ADMIN_USER} -p ${MONGODB_USER_ADMIN_PASSWORD} --host %s %s
 			%s
 			EOF
 			`, host, tlsConnectionParameter, mongoInitUsers) //FIXME: we removed replicaSet here?!
