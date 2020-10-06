@@ -252,13 +252,13 @@ func (r *ReconcilePerconaServerMongoDB) handleReplsetInit(m *api.PerconaServerMo
 
 		var tlsConnectionParameter = ""
 		if replset.Connectivity != nil {
-			tlsConnectionParameter = "--tls --tlsAllowInvalidCertificates --tlsCertificateKeyFile=/tmp/tls.pem "
+			tlsConnectionParameter = "&tls=true&tlsAllowInvalidCertificates=true&tlsCertificateKeyFile=/tmp/tls.pem"
 		}
 
 		cmd[2] = fmt.Sprintf(
 			`
-			cat <<-EOF | mongo "mongodb://${MONGODB_USER_ADMIN_USER}:${MONGODB_USER_ADMIN_PASSWORD}@%s/?replicaSet=%s"
-			%s %s
+			cat <<-EOF | mongo "mongodb://${MONGODB_USER_ADMIN_USER}:${MONGODB_USER_ADMIN_PASSWORD}@%s/?replicaSet=%s%s"
+			%s
 			EOF
 			`, host, replset.Name, tlsConnectionParameter, mongoInitUsers)
 		errb.Reset()
