@@ -247,7 +247,7 @@ func (r *ReconcilePerconaServerMongoDB) handleReplsetInit(m *api.PerconaServerMo
 		outb.Reset()
 		err = r.clientcmd.Exec(&pod, "mongod", cmd, nil, &outb, &errb, false)
 		if err != nil {
-			return fmt.Errorf("exec add admin user: %v / %s / %s", err, outb.String(), errb.String())
+			return fmt.Errorf("exec add admin user: command: %s / %v / %s / %s", cmd[2], err, outb.String(), errb.String())
 		}
 
 		var tlsConnectionParameter = ""
@@ -260,12 +260,12 @@ func (r *ReconcilePerconaServerMongoDB) handleReplsetInit(m *api.PerconaServerMo
 			cat <<-EOF | mongo -u ${MONGODB_USER_ADMIN_USER} -p ${MONGODB_USER_ADMIN_PASSWORD} --host %s %s"
 			%s
 			EOF
-			`, host, tlsConnectionParameter, mongoInitUsers) //FIXME: remove replicaSet here?!
+			`, host, tlsConnectionParameter, mongoInitUsers) //FIXME: we removed replicaSet here?!
 		errb.Reset()
 		outb.Reset()
 		err = r.clientcmd.Exec(&pod, "mongod", cmd, nil, &outb, &errb, false)
 		if err != nil {
-			return fmt.Errorf("exec add users: %v / %s / %s", err, outb.String(), errb.String())
+			return fmt.Errorf("exec add users: command: %s / error: %v / %s / %s", cmd[2], err, outb.String(), errb.String())
 		}
 
 		return nil
