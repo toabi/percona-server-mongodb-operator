@@ -457,4 +457,6 @@ fi
 rm -f "$jsonConfigFile" "$tempConfigFile"
 
 set -o xtrace
+
+echo "Will exec: $@"
 exec "$@"
