@@ -175,7 +175,7 @@ func (r *ReconcilePerconaServerMongoDB) createSSLManualy(cr *api.PerconaServerMo
 }
 
 func getCertificateSans(cr *api.PerconaServerMongoDB, replset *api.ReplsetSpec) []string {
-	var externalHostNames []string
+	externalHostNames := []string{}
 	if replset.Connectivity != nil {
 		for _, mapping := range replset.Connectivity.Mapping {
 			externalHostNames = append(externalHostNames, mapping.External)
