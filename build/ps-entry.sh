@@ -224,6 +224,7 @@ if [ "$originalArgOne" = 'mongod' ]; then
 	shouldPerformInitdb=
 	if [ "$MONGO_INITDB_ROOT_USERNAME" ] && [ "$MONGO_INITDB_ROOT_PASSWORD" ]; then
 		# if we have a username/password, let's set "--auth"
+		echo "Lets set --auth!"
 		_mongod_hack_ensure_arg '--auth' "$@"
 		set -- "${mongodHackedArgs[@]}"
 		shouldPerformInitdb='true'
@@ -237,6 +238,7 @@ if [ "$originalArgOne" = 'mongod' ]; then
 		exit 1
 	fi
 
+	echo "Should I perform init db (240)? $shouldPerformInitdb"
 	if [ -z "$shouldPerformInitdb" ]; then
 		# if we've got any /docker-entrypoint-initdb.d/* files to parse later, we should initdb
 		for f in /docker-entrypoint-initdb.d/*; do
@@ -249,6 +251,7 @@ if [ "$originalArgOne" = 'mongod' ]; then
 		done
 	fi
 
+	echo "Should I perform init db (253)? $shouldPerformInitdb"
 	# check for a few known paths (to determine whether we've already initialized and should thus skip our initdb scripts)
 	if [ -n "$shouldPerformInitdb" ]; then
 		dbPath="$(_dbPath "$@")"
@@ -265,8 +268,9 @@ if [ "$originalArgOne" = 'mongod' ]; then
 		done
 	fi
 
+	echo "shouldPerformInitdb is now: $shouldPerformInitdb"
 	if [ -n "$shouldPerformInitdb" ]; then
-		echo "Running init db"
+		echo "I should perform init db and will do it now..."
 		echo "ls:"
 		ls $MONGO_SSL_DIR
 		mongodHackedArgs=( "$@" )
