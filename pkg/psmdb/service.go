@@ -66,9 +66,11 @@ func ExternalService(m *api.PerconaServerMongoDB, replset *api.ReplsetSpec, podN
 		},
 	}
 	var annotations = make(map[string]string)
-	for index := range replset.Connectivity.Mapping {
-		if replset.Connectivity.Mapping[index].Internal == podName {
-			annotations[externalHostAnnotation]=replset.Connectivity.Mapping[index].External
+	if replset.Connectivity != nil {
+		for index := range replset.Connectivity.Mapping {
+			if replset.Connectivity.Mapping[index].Internal == podName {
+				annotations[externalHostAnnotation] = replset.Connectivity.Mapping[index].External
+			}
 		}
 	}
 
