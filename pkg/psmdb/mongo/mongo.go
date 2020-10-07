@@ -41,15 +41,17 @@ func Dial(addrs []string, replset, username, password string, useTLS bool) (*mon
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to mongo rs: %v", err)
 	}
-	log.Info(fmt.Sprintf("Connection to mongo hosts worked: %v", opts.Hosts))
+	log.Info(fmt.Sprintf("Connection to mongo hosts succeeded: %v", opts.Hosts))
 
-	ctx, pingcancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer pingcancel()
+	/*
+		ctx, pingcancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer pingcancel()
 
-	err = client.Ping(ctx, readpref.Primary())
-	if err != nil {
-		return nil, fmt.Errorf("failed to ping mongo: %v", err)
-	}
+		err = client.Ping(ctx, readpref.Primary())
+		if err != nil {
+			return nil, fmt.Errorf("failed to ping mongo: %v", err)
+		}
+	*/
 
 	return client, nil
 }
