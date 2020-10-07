@@ -38,6 +38,7 @@ func (r *ReconcilePerconaServerMongoDB) reconcileCluster(cr *api.PerconaServerMo
 	username := string(usersSecret.Data[envMongoDBClusterAdminUser])
 	session, err := mongo.Dial(rsAddrs, replset.Name, username, password, true)
 	if err != nil {
+		log.Info("Dialing replset", replset.Name, "pod with TLS failed:", err.Error())
 		session, err = mongo.Dial(rsAddrs, replset.Name, username, password, false)
 		if err != nil {
 			// try to init replset and if succseed
