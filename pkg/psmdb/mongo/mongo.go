@@ -13,7 +13,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
+
+var log = logf.Log.WithName("controller_psmdb")
 
 func Dial(addrs []string, replset, username, password string, useTLS bool) (*mongo.Client, error) {
 	ctx, connectcancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -38,8 +41,9 @@ func Dial(addrs []string, replset, username, password string, useTLS bool) (*mon
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to mongo rs: %v", err)
 	}
+	log.Info(fmt.Sprintf("Connection to mongo hosts worked: %v", opts.Hosts))
 
-	ctx, pingcancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, pingcancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer pingcancel()
 
 	err = client.Ping(ctx, readpref.Primary())
