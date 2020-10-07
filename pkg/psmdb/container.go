@@ -123,10 +123,12 @@ func containerArgs(m *api.PerconaServerMongoDB, replset *api.ReplsetSpec, resour
 		"--storageEngine=" + string(mSpec.Storage.Engine),
 		"--relaxPermChecks",
 		"--sslAllowInvalidCertificates",
+
 	}
 
 	if m.Spec.UnsafeConf {
 		args = append(args,
+			"--tlsMode=allowTLS",
 			"--clusterAuthMode=keyFile",
 			"--keyFile="+mongodSecretsDir+"/mongodb-key",
 		)
