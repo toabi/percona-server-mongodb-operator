@@ -6,7 +6,6 @@ if [ "${1:0:1}" = '-' ]; then
 fi
 
 originalArgOne="$1"
-echo "Running ps-entry.sh"
 
 # allow the container to be started with `--user`
 # all mongo* commands should be dropped to the correct user
@@ -215,8 +214,6 @@ _dbPath() {
 	echo "$dbPath"
 }
 
-echo "ArgOne = $originalArgOne";
-
 if [ "$originalArgOne" = 'mongod' ]; then
 	file_env 'MONGO_INITDB_ROOT_USERNAME'
 	file_env 'MONGO_INITDB_ROOT_PASSWORD'
@@ -224,7 +221,6 @@ if [ "$originalArgOne" = 'mongod' ]; then
 	shouldPerformInitdb=
 	if [ "$MONGO_INITDB_ROOT_USERNAME" ] && [ "$MONGO_INITDB_ROOT_PASSWORD" ]; then
 		# if we have a username/password, let's set "--auth"
-		echo "Lets set --auth!"
 		_mongod_hack_ensure_arg '--auth' "$@"
 		set -- "${mongodHackedArgs[@]}"
 		shouldPerformInitdb='true'
@@ -238,7 +234,6 @@ if [ "$originalArgOne" = 'mongod' ]; then
 		exit 1
 	fi
 
-	echo "Should I perform init db (240)? $shouldPerformInitdb"
 	if [ -z "$shouldPerformInitdb" ]; then
 		# if we've got any /docker-entrypoint-initdb.d/* files to parse later, we should initdb
 		for f in /docker-entrypoint-initdb.d/*; do
@@ -251,7 +246,6 @@ if [ "$originalArgOne" = 'mongod' ]; then
 		done
 	fi
 
-	echo "Should I perform init db (253)? $shouldPerformInitdb"
 	# check for a few known paths (to determine whether we've already initialized and should thus skip our initdb scripts)
 	if [ -n "$shouldPerformInitdb" ]; then
 		dbPath="$(_dbPath "$@")"
@@ -268,10 +262,7 @@ if [ "$originalArgOne" = 'mongod' ]; then
 		done
 	fi
 
-	echo "shouldPerformInitdb is now: $shouldPerformInitdb"
 	if [ -n "$shouldPerformInitdb" ]; then
-		echo "I should perform init db and will do it now..."
-		echo "ls:"
 		mongodHackedArgs=( "$@" )
 		if _parse_config "$@"; then
 			_mongod_hack_ensure_arg_val --config "$tempConfigFile" "${mongodHackedArgs[@]}"
@@ -291,10 +282,8 @@ if [ "$originalArgOne" = 'mongod' ]; then
 		# "BadValue: need sslPEMKeyFile when SSL is enabled" vs "BadValue: need to enable SSL via the sslMode flag when using SSL configuration parameters"
 		tlsMode='disabled'
 		if _mongod_hack_have_arg '--tlsCertificateKeyFile' "${mongodHackedArgs[@]}"; then
-			echo "Setting tlsMode preferTLS"
 			tlsMode='preferTLS'
 		elif _mongod_hack_have_arg '--sslPEMKeyFile' "${mongodHackedArgs[@]}"; then
-			echo "Setting tlsMode preferSSL"
 			tlsMode='preferSSL'
 		fi
 		# 4.2 switched all configuration/flag names from "SSL" to "TLS"
@@ -319,9 +308,8 @@ if [ "$originalArgOne" = 'mongod' ]; then
 		rm -f "$pidfile"
 		_mongod_hack_ensure_arg_val --pidfilepath "$pidfile" "${mongodHackedArgs[@]}"
 
-		echo "Forking mongodb: ${mongodHackedArgs[@]}"
 		"${mongodHackedArgs[@]}" --fork
-		echo "Done forking. Trying to connect to it."
+
 		mongo=( mongo --host 127.0.0.1 --port 27017 --quiet )
 
 		# check to see that our "mongod" actually did start up (catches "--help", "--version", MongoDB 3.2 being silly, slow prealloc, etc)
@@ -383,10 +371,6 @@ if [ "$originalArgOne" = 'mongod' ]; then
 
 	mongodHackedArgs=("$@")
 	MONGO_SSL_DIR=${MONGO_SSL_DIR:-/etc/mongodb-ssl}
-
-	echo "Contents of our MONGO_SSL_DIR"
-	ls $MONGO_SSL_DIR
-
 	CA=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 	if [ -f /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt ]; then
 		CA=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
@@ -474,6 +458,4 @@ fi
 rm -f "$jsonConfigFile" "$tempConfigFile"
 
 set -o xtrace
-
-echo "Will exec: $@"
 exec "$@"
