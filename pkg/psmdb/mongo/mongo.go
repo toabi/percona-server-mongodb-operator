@@ -13,10 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
-
-var log = logf.Log.WithName("controller_psmdb")
 
 func Dial(addrs []string, replset, username, password string, useTLS bool) (*mongo.Client, error) {
 	ctx, connectcancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -37,16 +34,14 @@ func Dial(addrs []string, replset, username, password string, useTLS bool) (*mon
 		opts = opts.SetTLSConfig(&tlsCfg).SetDialer(tlsDialer{cfg: &tlsCfg})
 	}
 
-	log.Info(fmt.Sprintf("Opening connection to mongo hosts %v, replset %s with username %s and TLS=%t", opts.Hosts, replset, username, useTLS))
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to mongo rs: %v", err)
 	}
 
-	ctx, pingcancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, pingcancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer pingcancel()
 
-	// Have to Ping because .Connect itself does no I/O operations
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
 		return nil, fmt.Errorf("failed to ping mongo: %v", err)

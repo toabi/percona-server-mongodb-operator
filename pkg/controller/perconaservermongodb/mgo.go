@@ -38,7 +38,6 @@ func (r *ReconcilePerconaServerMongoDB) reconcileCluster(cr *api.PerconaServerMo
 	username := string(usersSecret.Data[envMongoDBClusterAdminUser])
 	session, err := mongo.Dial(rsAddrs, replset.Name, username, password, true)
 	if err != nil {
-		log.Info(fmt.Sprintf("Initial TLS Dial failed because of: %v", err))
 		session, err = mongo.Dial(rsAddrs, replset.Name, username, password, false)
 		if err != nil {
 			// try to init replset and if succseed
@@ -248,7 +247,7 @@ func (r *ReconcilePerconaServerMongoDB) handleReplsetInit(m *api.PerconaServerMo
 		outb.Reset()
 		err = r.clientcmd.Exec(&pod, "mongod", cmd, nil, &outb, &errb, false)
 		if err != nil {
-			return fmt.Errorf("exec add admin user: command: %s / %v / %s / %s", cmd[2], err, outb.String(), errb.String())
+			return fmt.Errorf("exec add users: %v / %s / %s", err, outb.String(), errb.String())
 		}
 
 		var tlsConnectionParameter = ""
