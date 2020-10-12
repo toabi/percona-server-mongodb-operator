@@ -247,25 +247,20 @@ func (r *ReconcilePerconaServerMongoDB) handleReplsetInit(m *api.PerconaServerMo
 		outb.Reset()
 		err = r.clientcmd.Exec(&pod, "mongod", cmd, nil, &outb, &errb, false)
 		if err != nil {
-			return fmt.Errorf("exec add users: %v / %s / %s", err, outb.String(), errb.String())
-		}
-
-		var tlsConnectionParameter = ""
-		if replset.Connectivity != nil {
-			tlsConnectionParameter = "--tls --tlsCertificateKeyFile=/tmp/tls.pem --tlsCAFile=/etc/mongodb-ssl/ca.crt"
+			return fmt.Errorf("exec add admin user: %v / %s / %s", err, outb.String(), errb.String())
 		}
 
 		cmd[2] = fmt.Sprintf(
 			`
-			cat <<-EOF | mongo -u ${MONGODB_USER_ADMIN_USER} -p ${MONGODB_USER_ADMIN_PASSWORD} --host %s/%s %s
+			cat <<-EOF | mongo "mongodb://${MONGODB_USER_ADMIN_USER}:${MONGODB_USER_ADMIN_PASSWORD}@%s/?replicaSet=%s"
 			%s
 			EOF
-			`, replset.Name, host, tlsConnectionParameter, mongoInitUsers)
+			`, host, replset.Name, mongoInitUsers)
 		errb.Reset()
 		outb.Reset()
 		err = r.clientcmd.Exec(&pod, "mongod", cmd, nil, &outb, &errb, false)
 		if err != nil {
-			return fmt.Errorf("exec add users: command: %s / error: %v / %s / %s", cmd[2], err, outb.String(), errb.String())
+			return fmt.Errorf("exec add users: %v / %s / %s", err, outb.String(), errb.String())
 		}
 
 		return nil
