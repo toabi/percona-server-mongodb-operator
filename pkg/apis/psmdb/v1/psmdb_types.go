@@ -202,7 +202,7 @@ type ReplsetSpec struct {
 	LivenessProbe            *LivenessProbeExtended     `json:"livenessProbe,omitempty"`
 	PodSecurityContext       *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
 	ContainerSecurityContext *corev1.SecurityContext    `json:"containerSecurityContext,omitempty"`
-	Connectivity        	 *Connectivity           	`json:"connectivity"`
+	Connectivity             *Connectivity              `json:"connectivity"`
 	MultiAZ
 }
 
@@ -250,9 +250,10 @@ type ResourcesSpec struct {
 }
 
 type SecretsSpec struct {
-	Users       string `json:"users,omitempty"`
-	SSL         string `json:"ssl,omitempty"`
-	SSLInternal string `json:"sslInternal,omitempty"`
+	Users         string `json:"users,omitempty"`
+	SSL           string `json:"ssl,omitempty"`
+	SSLInternal   string `json:"sslInternal,omitempty"`
+	SkipReconcile bool   `json:"skipReconcile,omitempty"`
 }
 
 type MongosSpec struct {
@@ -517,4 +518,3 @@ func (cr *PerconaServerMongoDB) CompareVersion(version string) int {
 	//using Must because "version" must be right format
 	return cr.version.Compare(v.Must(v.NewVersion(version)))
 }
-
