@@ -214,7 +214,7 @@ func (r *ReconcilePerconaServerMongoDB) Reconcile(request reconcile.Request) (re
 			return reconcile.Result{}, fmt.Errorf("failed to reconcile users: %v", err)
 		}
 	}
-	if !cr.Spec.UnsafeConf {
+	if !cr.Spec.UnsafeConf && cr.Spec.Secrets.SSL == "" && cr.Spec.Secrets.SSLInternal == ""{
 		err = r.reconsileSSL(cr)
 		if err != nil {
 			err = errors.Errorf(`TLS secrets handler: "%v". Please create your TLS secret `+cr.Spec.Secrets.SSL+` manually or setup cert-manager correctly`, err)
