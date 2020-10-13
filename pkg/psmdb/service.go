@@ -72,7 +72,6 @@ func ExternalService(m *api.PerconaServerMongoDB, replset *api.ReplsetSpec, podN
 				annotations[externalHostAnnotation] = replset.Connectivity.Mapping[index].External
 			}
 		}
-		svc.Spec.PublishNotReadyAddresses = true
 	}
 
 	svc.Annotations = annotations
@@ -95,7 +94,9 @@ func ExternalService(m *api.PerconaServerMongoDB, replset *api.ReplsetSpec, podN
 		},
 		Selector: map[string]string{"statefulset.kubernetes.io/pod-name": podName},
 	}
-
+	if replset.Connectivity != nil {
+		svc.Spec.PublishNotReadyAddresses = true
+	}
 	switch replset.Expose.ExposeType {
 	case corev1.ServiceTypeNodePort:
 		svc.Spec.Type = corev1.ServiceTypeNodePort
