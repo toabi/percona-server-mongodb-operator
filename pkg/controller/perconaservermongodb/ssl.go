@@ -74,11 +74,12 @@ func (r *ReconcilePerconaServerMongoDB) createSSLByCertManager(cr *api.PerconaSe
 			return fmt.Errorf("create issuer: %v", err)
 		}
 	} else {
-		issuerKind, issuerName, err = r.getExistingIssuer(cr)
-		if err != nil {
-			return fmt.Errorf("error retrieving issuer: %v", err)
+		if cr.Spec.Secrets.ExistingIssuer.Kind != "" && cr.Spec.Secrets.ExistingIssuer.Name != "" {
+			issuerName = cr.Spec.Secrets.ExistingIssuer.Name
+			issuerKind = cr.Spec.Secrets.ExistingIssuer.Kind
+		} else {
+			return fmt.Errorf("error setting existing issuer: %v", cr.Spec.Secrets.ExistingIssuer)
 		}
-
 	}
 	err = r.client.Create(context.TODO(), &cm.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
@@ -129,35 +130,35 @@ func (r *ReconcilePerconaServerMongoDB) createSSLByCertManager(cr *api.PerconaSe
 
 	return r.waitForCerts(cr.Namespace, cr.Spec.Secrets.SSL, cr.Spec.Secrets.SSLInternal)
 }
-
-func (r *ReconcilePerconaServerMongoDB) getExistingIssuer(cr *api.PerconaServerMongoDB) (string, string, error) {
-	switch cr.Spec.Secrets.ExistingIssuer.Kind {
-	case "ClusterIssuer":
-		var issuer = &cm.ClusterIssuer{}
-		err := r.client.Get(context.TODO(), types.NamespacedName{
-			Name: cr.Spec.Secrets.ExistingIssuer.Name,
-		}, issuer)
-		if err != nil {
-			return "", "", fmt.Errorf("error retrieving clusterissuer: %v", err)
-		}
-		return issuer.Name, issuer.Kind, nil
-
-	case "Issuer":
-		var issuer = &cm.Issuer{}
-		err := r.client.Get(context.TODO(), types.NamespacedName{
-			Name:      cr.Spec.Secrets.ExistingIssuer.Name,
-			Namespace: cr.Namespace,
-		}, issuer)
-
-		if err != nil {
-			return "", "", fmt.Errorf("error retrieving issuer: %v", err)
-		}
-		return issuer.Name, issuer.Kind, nil
-
-	default:
-		return "", "", fmt.Errorf("issuer kind not defined: %s", cr.Spec.Secrets.ExistingIssuer.Kind)
-	}
-}
+//
+//func (r *ReconcilePerconaServerMongoDB) getExistingIssuer(cr *api.PerconaServerMongoDB) (string, string, error) {
+//	switch cr.Spec.Secrets.ExistingIssuer.Kind {
+//	case "ClusterIssuer":
+//		var issuer = &cm.ClusterIssuer{}
+//		err := r.client.Get(context.TODO(), types.NamespacedName{
+//			Name: cr.Spec.Secrets.ExistingIssuer.Name,
+//		}, issuer)
+//		if err != nil {
+//			return "", "", fmt.Errorf("error retrieving clusterissuer: %v", err)
+//		}
+//		return issuer.Name, issuer.Kind, nil
+//
+//	case "Issuer":
+//		var issuer = &cm.Issuer{}
+//		err := r.client.Get(context.TODO(), types.NamespacedName{
+//			Name:      cr.Spec.Secrets.ExistingIssuer.Name,
+//			Namespace: cr.Namespace,
+//		}, issuer)
+//
+//		if err != nil {
+//			return "", "", fmt.Errorf("error retrieving issuer: %v", err)
+//		}
+//		return issuer.Name, issuer.Kind, nil
+//
+//	default:
+//		return "", "", fmt.Errorf("issuer kind not defined: %s", cr.Spec.Secrets.ExistingIssuer.Kind)
+//	}
+//}
 
 func (r *ReconcilePerconaServerMongoDB) waitForCerts(namespace string, secretsList ...string) error {
 	ticker := time.NewTicker(3 * time.Second)
@@ -263,3 +264,4 @@ func getCertificateSans(cr *api.PerconaServerMongoDB, replset *api.ReplsetSpec) 
 		"*." + cr.Name + "-" + replset.Name + "." + cr.Namespace + "." + cr.Spec.ClusterServiceDNSSuffix,
 	}, externalHostNames...)
 }
+
