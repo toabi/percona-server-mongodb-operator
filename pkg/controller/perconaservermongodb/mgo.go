@@ -36,31 +36,33 @@ func (r *ReconcilePerconaServerMongoDB) reconcileCluster(cr *api.PerconaServerMo
 	}
 	password := string(usersSecret.Data[envMongoDBClusterAdminPassword])
 	username := string(usersSecret.Data[envMongoDBClusterAdminUser])
-	session, err := mongo.Dial(rsAddrs, replset.Name, username, password, true)
+	session, err := mongo.Dial(rsAddrs, replset.Name, username, password)
 	if err != nil {
-		session, err = mongo.Dial(rsAddrs, replset.Name, username, password, false)
-		if err != nil {
-			// try to init replset and if succseed
-			// we'll go further on the next reconcile iteration
-			if !cr.Status.Replsets[replset.Name].Initialized {
-				err = r.handleReplsetInit(cr, replset, pods.Items)
-				if err != nil {
-					return clusterInit, errors.Wrap(err, "handleReplsetInit:")
-				}
-				cr.Status.Replsets[replset.Name].Initialized = true
-				cr.Status.Conditions = append(cr.Status.Conditions, api.ClusterCondition{
-					Status:             api.ConditionTrue,
-					Type:               api.ClusterRSInit,
-					Message:            replset.Name,
-					LastTransitionTime: metav1.NewTime(time.Now()),
-				})
-				return clusterInit, nil
+		// try to init replset and if succseed
+		// we'll go further on the next reconcile iteration
+		if !cr.Status.Replsets[replset.Name].Initialized {
+			err = r.handleReplsetInit(cr, replset, pods.Items)
+			if err != nil {
+				return clusterInit, errors.Wrap(err, "handleReplsetInit:")
 			}
-			return clusterError, errors.Wrap(err, "dial:")
+			cr.Status.Replsets[replset.Name].Initialized = true
+			cr.Status.Conditions = append(cr.Status.Conditions, api.ClusterCondition{
+				Status:             api.ConditionTrue,
+				Type:               api.ClusterRSInit,
+				Message:            replset.Name,
+				LastTransitionTime: metav1.NewTime(time.Now()),
+			})
+			return clusterInit, nil
 		}
+		return clusterError, errors.Wrap(err, "dial:")
 	}
 
-	defer session.Disconnect(context.TODO())
+	defer func() {
+		err := session.Disconnect(context.TODO())
+		if err != nil {
+			log.Error(err, "failed to close connection")
+		}
+	}()
 
 	cnf, err := mongo.ReadConfig(context.TODO(), session)
 	if err != nil {

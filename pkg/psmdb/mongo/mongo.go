@@ -13,9 +13,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func Dial(addrs []string, replset, username, password string, useTLS bool) (*mongo.Client, error) {
+var log = logf.Log.WithName("mongo")
+
+func Dial(addrs []string, replset, username, password string) (*mongo.Client, error) {
 	ctx, connectcancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer connectcancel()
 
@@ -29,15 +32,19 @@ func Dial(addrs []string, replset, username, password string, useTLS bool) (*mon
 		SetWriteConcern(writeconcern.New(writeconcern.WMajority(), writeconcern.J(true))).
 		SetReadPreference(readpref.Primary())
 
-	if useTLS {
-		tlsCfg := tls.Config{InsecureSkipVerify: true}
-		opts = opts.SetTLSConfig(&tlsCfg).SetDialer(tlsDialer{cfg: &tlsCfg})
-	}
-
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to mongo rs: %v", err)
 	}
+
+	defer func() {
+		if err != nil {
+			derr := client.Disconnect(ctx)
+			if derr != nil {
+				log.Error(err, "failed to disconnect")
+			}
+		}
+	}()
 
 	ctx, pingcancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer pingcancel()

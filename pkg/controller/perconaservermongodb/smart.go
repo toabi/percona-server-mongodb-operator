@@ -70,7 +70,13 @@ func (r *ReconcilePerconaServerMongoDB) smartUpdate(cr *api.PerconaServerMongoDB
 	if err != nil {
 		return fmt.Errorf("failed to get mongo client: %v", err)
 	}
-	defer client.Disconnect(context.TODO())
+
+	defer func() {
+		err := client.Disconnect(context.TODO())
+		if err != nil {
+			log.Error(err, "failed to close connection")
+		}
+	}()
 
 	primary, err := r.getPrimaryPod(client)
 	if err != nil {
@@ -180,7 +186,7 @@ func (r *ReconcilePerconaServerMongoDB) getMongoClient(cr *api.PerconaServerMong
 		return nil, errors.Wrap(err, "failed to get replset addr")
 	}
 
-	client, err := mongo.Dial(rsAddrs, replset.Name, string(usersSecret.Data[envMongoDBClusterAdminUser]), string(usersSecret.Data[envMongoDBClusterAdminPassword]), false)
+	client, err := mongo.Dial(rsAddrs, replset.Name, string(usersSecret.Data[envMongoDBClusterAdminUser]), string(usersSecret.Data[envMongoDBClusterAdminPassword]))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial mongo")
 	}

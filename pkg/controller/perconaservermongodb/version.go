@@ -189,12 +189,17 @@ func (r *ReconcilePerconaServerMongoDB) fetchVersionFromMongo(cr *api.PerconaSer
 		return errors.Wrap(err, "get replset addr")
 	}
 
-	session, err := mongo.Dial(rsAddrs, replset.Name, string(usersSecret.Data[envMongoDBClusterAdminUser]), string(usersSecret.Data[envMongoDBClusterAdminPassword]), false)
+	session, err := mongo.Dial(rsAddrs, replset.Name, string(usersSecret.Data[envMongoDBClusterAdminUser]), string(usersSecret.Data[envMongoDBClusterAdminPassword]))
 	if err != nil {
 		return errors.Wrap(err, "dial")
 	}
 
-	defer session.Disconnect(context.TODO())
+	defer func() {
+		err := session.Disconnect(context.TODO())
+		if err != nil {
+			log.Error(err, "failed to close connection")
+		}
+	}()
 
 	info, err := mongo.RSBuildInfo(context.Background(), session)
 	if err != nil {
