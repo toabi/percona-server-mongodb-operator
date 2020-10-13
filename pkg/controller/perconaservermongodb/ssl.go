@@ -44,8 +44,8 @@ func (r *ReconcilePerconaServerMongoDB) reconsileSSL(cr *api.PerconaServerMongoD
 }
 
 func (r *ReconcilePerconaServerMongoDB) createSSLByCertManager(cr *api.PerconaServerMongoDB) error {
-	issuerKind := "Issuer"
-	issuerName := cr.Name + "-psmdb-ca"
+	//issuerKind := "Issuer"
+	//issuerName := cr.Name + "-psmdb-ca"
 	certificateDNSNames := []string{"localhost"}
 
 	for _, replset := range cr.Spec.Replsets {
@@ -56,21 +56,21 @@ func (r *ReconcilePerconaServerMongoDB) createSSLByCertManager(cr *api.PerconaSe
 		return err
 	}
 	ownerReferences := []metav1.OwnerReference{owner}
-	err = r.client.Create(context.TODO(), &cm.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            issuerName,
-			Namespace:       cr.Namespace,
-			OwnerReferences: ownerReferences,
-		},
-		Spec: cm.IssuerSpec{
-			IssuerConfig: cm.IssuerConfig{
-				SelfSigned: &cm.SelfSignedIssuer{},
-			},
-		},
-	})
-	if err != nil && !k8serrors.IsAlreadyExists(err) {
-		return fmt.Errorf("create issuer: %v", err)
-	}
+	//err = r.client.Create(context.TODO(), &cm.Issuer{
+	//	ObjectMeta: metav1.ObjectMeta{
+	//		Name:            issuerName,
+	//		Namespace:       cr.Namespace,
+	//		OwnerReferences: ownerReferences,
+	//	},
+	//	Spec: cm.IssuerSpec{
+	//		IssuerConfig: cm.IssuerConfig{
+	//			SelfSigned: &cm.SelfSignedIssuer{},
+	//		},
+	//	},
+	//})
+	//if err != nil && !k8serrors.IsAlreadyExists(err) {
+	//	return fmt.Errorf("create issuer: %v", err)
+	//}
 
 	err = r.client.Create(context.TODO(), &cm.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
@@ -85,8 +85,8 @@ func (r *ReconcilePerconaServerMongoDB) createSSLByCertManager(cr *api.PerconaSe
 			DNSNames:     certificateDNSNames,
 			IsCA:         true,
 			IssuerRef: cmmeta.ObjectReference{
-				Name: issuerName,
-				Kind: issuerKind,
+				Name: "bosh-ca-issuer",
+				Kind: "ClusterIssuer",
 			},
 		},
 	})
@@ -110,8 +110,8 @@ func (r *ReconcilePerconaServerMongoDB) createSSLByCertManager(cr *api.PerconaSe
 			DNSNames:     certificateDNSNames,
 			IsCA:         true,
 			IssuerRef: cmmeta.ObjectReference{
-				Name: issuerName,
-				Kind: issuerKind,
+				Name: "bosh-ca-issuer",
+				Kind: "ClusterIssuer",
 			},
 		},
 	})
