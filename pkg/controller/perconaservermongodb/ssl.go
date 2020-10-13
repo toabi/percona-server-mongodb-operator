@@ -44,34 +44,42 @@ func (r *ReconcilePerconaServerMongoDB) reconsileSSL(cr *api.PerconaServerMongoD
 }
 
 func (r *ReconcilePerconaServerMongoDB) createSSLByCertManager(cr *api.PerconaServerMongoDB) error {
-	//issuerKind := "Issuer"
-	//issuerName := cr.Name + "-psmdb-ca"
+	issuerKind := "Issuer"
+	issuerName := cr.Name + "-psmdb-ca"
 	certificateDNSNames := []string{"localhost"}
 
 	for _, replset := range cr.Spec.Replsets {
 		certificateDNSNames = append(certificateDNSNames, getCertificateSans(cr, replset)...)
 	}
 	owner, err := OwnerRef(cr, r.scheme)
+	ownerReferences := []metav1.OwnerReference{owner}
+
 	if err != nil {
 		return err
 	}
-	ownerReferences := []metav1.OwnerReference{owner}
-	//err = r.client.Create(context.TODO(), &cm.Issuer{
-	//	ObjectMeta: metav1.ObjectMeta{
-	//		Name:            issuerName,
-	//		Namespace:       cr.Namespace,
-	//		OwnerReferences: ownerReferences,
-	//	},
-	//	Spec: cm.IssuerSpec{
-	//		IssuerConfig: cm.IssuerConfig{
-	//			SelfSigned: &cm.SelfSignedIssuer{},
-	//		},
-	//	},
-	//})
-	//if err != nil && !k8serrors.IsAlreadyExists(err) {
-	//	return fmt.Errorf("create issuer: %v", err)
-	//}
+	if cr.Spec.Secrets.ExistingIssuer == nil {
+		err = r.client.Create(context.TODO(), &cm.Issuer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            issuerName,
+				Namespace:       cr.Namespace,
+				OwnerReferences: ownerReferences,
+			},
+			Spec: cm.IssuerSpec{
+				IssuerConfig: cm.IssuerConfig{
+					SelfSigned: &cm.SelfSignedIssuer{},
+				},
+			},
+		})
+		if err != nil && !k8serrors.IsAlreadyExists(err) {
+			return fmt.Errorf("create issuer: %v", err)
+		}
+	} else {
+		issuerKind, issuerName, err = r.getExistingIssuer(cr)
+		if err != nil {
+			return fmt.Errorf("error retrieving issuer: %v", err)
+		}
 
+	}
 	err = r.client.Create(context.TODO(), &cm.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            cr.Name + "-ssl",
@@ -85,8 +93,8 @@ func (r *ReconcilePerconaServerMongoDB) createSSLByCertManager(cr *api.PerconaSe
 			DNSNames:     certificateDNSNames,
 			IsCA:         true,
 			IssuerRef: cmmeta.ObjectReference{
-				Name: "bosh-ca-issuer",
-				Kind: "ClusterIssuer",
+				Name: issuerName,
+				Kind: issuerKind,
 			},
 		},
 	})
@@ -110,8 +118,8 @@ func (r *ReconcilePerconaServerMongoDB) createSSLByCertManager(cr *api.PerconaSe
 			DNSNames:     certificateDNSNames,
 			IsCA:         true,
 			IssuerRef: cmmeta.ObjectReference{
-				Name: "bosh-ca-issuer",
-				Kind: "ClusterIssuer",
+				Name: issuerName,
+				Kind: issuerKind,
 			},
 		},
 	})
@@ -120,6 +128,35 @@ func (r *ReconcilePerconaServerMongoDB) createSSLByCertManager(cr *api.PerconaSe
 	}
 
 	return r.waitForCerts(cr.Namespace, cr.Spec.Secrets.SSL, cr.Spec.Secrets.SSLInternal)
+}
+
+func (r *ReconcilePerconaServerMongoDB) getExistingIssuer(cr *api.PerconaServerMongoDB) (string, string, error) {
+	switch cr.Spec.Secrets.ExistingIssuer.Kind {
+	case "ClusterIssuer":
+		var issuer = &cm.ClusterIssuer{}
+		err := r.client.Get(context.TODO(), types.NamespacedName{
+			Name: cr.Spec.Secrets.ExistingIssuer.Name,
+		}, issuer)
+		if err != nil {
+			return "", "", fmt.Errorf("error retrieving clusterissuer: %v", err)
+		}
+		return issuer.Name, issuer.Kind, nil
+
+	case "Issuer":
+		var issuer = &cm.Issuer{}
+		err := r.client.Get(context.TODO(), types.NamespacedName{
+			Name:      cr.Spec.Secrets.ExistingIssuer.Name,
+			Namespace: cr.Namespace,
+		}, issuer)
+
+		if err != nil {
+			return "", "", fmt.Errorf("error retrieving issuer: %v", err)
+		}
+		return issuer.Name, issuer.Kind, nil
+
+	default:
+		return "", "", fmt.Errorf("issuer kind not defined: %s", cr.Spec.Secrets.ExistingIssuer.Kind)
+	}
 }
 
 func (r *ReconcilePerconaServerMongoDB) waitForCerts(namespace string, secretsList ...string) error {

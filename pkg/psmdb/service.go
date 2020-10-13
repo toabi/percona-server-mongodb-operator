@@ -72,6 +72,7 @@ func ExternalService(m *api.PerconaServerMongoDB, replset *api.ReplsetSpec, podN
 				annotations[externalHostAnnotation] = replset.Connectivity.Mapping[index].External
 			}
 		}
+		svc.Spec.PublishNotReadyAddresses = true
 	}
 
 	svc.Annotations = annotations

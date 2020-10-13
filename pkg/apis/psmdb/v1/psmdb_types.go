@@ -249,11 +249,16 @@ type ResourcesSpec struct {
 	Requests *ResourceSpecRequirements `json:"requests,omitempty"`
 }
 
+type Issuer struct {
+	Name string `json:"name,omitempty"`
+	Kind string `json:"kind,omitempty"`
+}
+
 type SecretsSpec struct {
 	Users         string `json:"users,omitempty"`
 	SSL           string `json:"ssl,omitempty"`
 	SSLInternal   string `json:"sslInternal,omitempty"`
-	SkipReconcile bool   `json:"skipReconcile,omitempty"`
+	ExistingIssuer *Issuer `json:"existingIssuer,omitempty"`
 }
 
 type MongosSpec struct {
