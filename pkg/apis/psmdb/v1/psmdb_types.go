@@ -254,9 +254,9 @@ type Issuer struct {
 }
 
 type SecretsSpec struct {
-	Users         string `json:"users,omitempty"`
-	SSL           string `json:"ssl,omitempty"`
-	SSLInternal   string `json:"sslInternal,omitempty"`
+	Users          string  `json:"users,omitempty"`
+	SSL            string  `json:"ssl,omitempty"`
+	SSLInternal    string  `json:"sslInternal,omitempty"`
 	ExistingIssuer *Issuer `json:"existingIssuer,omitempty"`
 }
 

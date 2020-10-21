@@ -164,7 +164,6 @@ func (r *ReconcilePerconaServerMongoDB) waitForCerts(namespace string, secretsLi
 func (r *ReconcilePerconaServerMongoDB) createSSLManualy(cr *api.PerconaServerMongoDB) error {
 	data := make(map[string][]byte)
 	certificateDNSNames := []string{"localhost"}
-
 	for _, replset := range cr.Spec.Replsets {
 		certificateDNSNames = append(certificateDNSNames, getCertificateSans(cr, replset)...)
 	}
@@ -235,4 +234,3 @@ func getCertificateSans(cr *api.PerconaServerMongoDB, replset *api.ReplsetSpec) 
 		"*." + cr.Name + "-" + replset.Name + "." + cr.Namespace + "." + cr.Spec.ClusterServiceDNSSuffix,
 	}, externalHostNames...)
 }
-
